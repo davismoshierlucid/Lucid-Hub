@@ -1,0 +1,7 @@
+{
+  "name": "lucid-hub",
+  "private": true,
+  "scripts": {
+    "migrate": "npm run migrate --prefix backend"
+  }
+}
