@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { getPool, isDatabaseConfigured } from '../config/db.js';
 import { recalculateAllCompanyScores } from '../services/priorityScore.js';
+import { runDailyCadenceMaintenance } from '../services/actionEngine.js';
 
 /**
  * Daily bulk priority refresh at 6:00 AM (server local time).
@@ -16,12 +17,14 @@ export function startPriorityScoreCron() {
       if (!isDatabaseConfigured()) {
         return;
       }
-      console.log('[priority-cron] Bulk score refresh started');
+      console.log('[priority-cron] Daily jobs started');
       try {
         const pool = getPool();
+        await runDailyCadenceMaintenance(pool);
+        console.log('[priority-cron] Cadence maintenance completed');
         const count = await recalculateAllCompanyScores(pool);
         console.log(
-          '[priority-cron] Bulk score refresh completed:',
+          '[priority-cron] Priority scores refreshed:',
           count,
           'companies'
         );

@@ -3,6 +3,7 @@ import { AppLayout } from './components/AppLayout.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { PlaceholderPage } from './pages/PlaceholderPage.jsx';
+import { DashboardPage } from './pages/DashboardPage.jsx';
 import { CompanyListPage } from './pages/CompanyListPage.jsx';
 import { CompanyDetailPage } from './pages/CompanyDetailPage.jsx';
 import { ContactListPage } from './pages/ContactListPage.jsx';
@@ -21,15 +22,7 @@ export default function App() {
           }
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PlaceholderPage
-                title="Dashboard"
-                description="Your daily command center for origination and execution. Content will load here after login."
-              />
-            }
-          />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/companies" element={<CompanyListPage />} />
           <Route path="/companies/:id" element={<CompanyDetailPage />} />
           <Route path="/contacts" element={<ContactListPage />} />
