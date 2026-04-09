@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { api } from '../api/client.js';
 
+const devBypassAuth = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+
 export function ProtectedRoute({ children }) {
   const location = useLocation();
-  const [status, setStatus] = useState('loading');
+  const [status, setStatus] = useState(devBypassAuth ? 'ok' : 'loading');
 
   useEffect(() => {
+    if (devBypassAuth) {
+      return undefined;
+    }
     let cancelled = false;
     api
       .get('/api/me')

@@ -3,6 +3,10 @@ import { AppLayout } from './components/AppLayout.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { PlaceholderPage } from './pages/PlaceholderPage.jsx';
+import { CompanyListPage } from './pages/CompanyListPage.jsx';
+import { CompanyDetailPage } from './pages/CompanyDetailPage.jsx';
+import { ContactListPage } from './pages/ContactListPage.jsx';
+import { ContactDetailPage } from './pages/ContactDetailPage.jsx';
 
 export default function App() {
   return (
@@ -26,24 +30,10 @@ export default function App() {
               />
             }
           />
-          <Route
-            path="/companies"
-            element={
-              <PlaceholderPage
-                title="Companies"
-                description="Coverage universe and company records."
-              />
-            }
-          />
-          <Route
-            path="/contacts"
-            element={
-              <PlaceholderPage
-                title="Contacts"
-                description="People linked to companies and interaction history."
-              />
-            }
-          />
+          <Route path="/companies" element={<CompanyListPage />} />
+          <Route path="/companies/:id" element={<CompanyDetailPage />} />
+          <Route path="/contacts" element={<ContactListPage />} />
+          <Route path="/contacts/:id" element={<ContactDetailPage />} />
           <Route
             path="/deals"
             element={

@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 
+if (process.env.DEV_BYPASS_AUTH === 'true') {
+  console.warn('WARNING: DEV AUTH BYPASS ACTIVE');
+}
+
 const region = process.env.COGNITO_REGION;
 const userPoolId = process.env.COGNITO_USER_POOL_ID;
 const clientId = process.env.COGNITO_CLIENT_ID;
@@ -58,6 +62,16 @@ export function verifyIdToken(token) {
  */
 export async function requireAuth(req, res, next) {
   try {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+      req.dbUserId = '00000000-0000-0000-0000-000000000000';
+      req.user = {
+        sub: 'dev-bypass-local',
+        email: 'dev@lucid.local',
+        name: 'Dev bypass',
+      };
+      next();
+      return;
+    }
     if (!region || !userPoolId || !clientId) {
       res.status(503).json({ error: 'Authentication is not configured on the server' });
       return;
