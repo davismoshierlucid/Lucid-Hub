@@ -5,8 +5,11 @@ import {
   testDatabaseConnection,
 } from './config/db.js';
 import { startPriorityScoreCron } from './jobs/priorityScoreCron.js';
+import { logAnthropicConfigWarning } from './services/claudeClient.js';
 
 const port = parseInt(process.env.PORT || '3001', 10);
+
+logAnthropicConfigWarning();
 
 async function start() {
   if (!isDatabaseConfigured()) {

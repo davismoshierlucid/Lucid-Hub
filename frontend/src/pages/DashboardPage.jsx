@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { PriorityBadge } from '../components/HealthBadge.jsx';
-
-const SPRINT5_MSG = 'Outreach drafting live in Sprint 5';
+import { DraftEmailModal } from '../components/DraftEmailModal.jsx';
+import { outreachIntentForActionCard } from '../utils/outreachIntentFromAction.js';
 
 function dbErr(e) {
   if (e.response?.status === 503) {
@@ -34,6 +34,7 @@ export function DashboardPage() {
   const [snoozeDate, setSnoozeDate] = useState('');
   const [snoozeBusy, setSnoozeBusy] = useState(false);
   const [customIntent, setCustomIntent] = useState({});
+  const [draftModal, setDraftModal] = useState(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -97,8 +98,28 @@ export function DashboardPage() {
     return t.toISOString().slice(0, 10);
   }
 
+  function lastContactIsoForAction(a) {
+    return (
+      a.last_contact?.activity_timestamp ??
+      a.last_outreach_date ??
+      a.last_interaction ??
+      null
+    );
+  }
+
   return (
     <div className="space-y-14">
+      <DraftEmailModal
+        open={!!draftModal}
+        onClose={() => setDraftModal(null)}
+        companyId={draftModal?.companyId}
+        companyName={draftModal?.companyName ?? ''}
+        lastContactIso={draftModal?.lastContactIso ?? null}
+        outreachAttemptCount={draftModal?.outreachAttemptCount ?? 0}
+        initialIntent={draftModal?.initialIntent ?? ''}
+        initialSpecificNotes={draftModal?.initialSpecificNotes ?? ''}
+        onSaved={loadAll}
+      />
       <header>
         <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
         <p className="mt-1 text-slate-400">
@@ -146,19 +167,37 @@ export function DashboardPage() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {a.options?.map((opt) =>
                   opt.type === 'C' ? (
-                    <span
+                    <button
                       key="C"
-                      title={SPRINT5_MSG}
-                      className="inline-block rounded-lg border border-white/10 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-400"
+                      type="button"
+                      onClick={() =>
+                        setDraftModal({
+                          companyId: a.company_id,
+                          companyName: a.name,
+                          lastContactIso: lastContactIsoForAction(a),
+                          outreachAttemptCount: a.outreach_attempt_count ?? 0,
+                          initialIntent: '',
+                          initialSpecificNotes:
+                            customIntent[a.company_id]?.trim() || '',
+                        })
+                      }
+                      className="rounded-lg border border-white/15 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
                     >
                       {opt.type}: {opt.label}
-                    </span>
+                    </button>
                   ) : (
                     <button
                       key={opt.type}
                       type="button"
-                      title={SPRINT5_MSG}
-                      onClick={() => alert(SPRINT5_MSG)}
+                      onClick={() =>
+                        setDraftModal({
+                          companyId: a.company_id,
+                          companyName: a.name,
+                          lastContactIso: lastContactIsoForAction(a),
+                          outreachAttemptCount: a.outreach_attempt_count ?? 0,
+                          initialIntent: outreachIntentForActionCard(a),
+                        })
+                      }
                       className="rounded-lg border border-white/15 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
                     >
                       {opt.type}: {opt.label}
@@ -182,7 +221,6 @@ export function DashboardPage() {
                   }
                   className="mt-1 w-full max-w-md rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-sm text-white"
                 />
-                <p className="mt-1 text-xs text-slate-500">{SPRINT5_MSG}</p>
               </div>
 
               <div className="mt-4 border-t border-white/10 pt-4">

@@ -1,0 +1,2 @@
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS capiq_data JSONB;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS factset_data JSONB;

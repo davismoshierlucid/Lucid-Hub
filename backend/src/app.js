@@ -10,6 +10,7 @@ import contactsRoutes from './routes/contacts.js';
 import searchRoutes from './routes/search.js';
 import adminRoutes from './routes/admin.js';
 import dashboardRoutes from './routes/dashboard.js';
+import aiRoutes from './routes/ai.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api', contactsRoutes);
 app.use('/api', searchRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', dashboardRoutes);
+app.use('/api', aiRoutes);
 
 app.use('/api', notFoundHandler);
 app.use(errorHandler);

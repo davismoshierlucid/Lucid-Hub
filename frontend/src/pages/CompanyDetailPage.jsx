@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { HealthBadge, PriorityBadge } from '../components/HealthBadge.jsx';
+import { DraftEmailModal } from '../components/DraftEmailModal.jsx';
+import { formatAiError } from '../utils/aiError.js';
 
 const PRIORITY_LABELS = {
   capital_need_urgency: 'Capital Need Urgency',
@@ -26,6 +28,11 @@ export function CompanyDetailPage() {
   const [flagReason, setFlagReason] = useState('');
   const [flagErr, setFlagErr] = useState(null);
   const [priorityRecalcLoading, setPriorityRecalcLoading] = useState(false);
+  const [draftModalOpen, setDraftModalOpen] = useState(false);
+  const [callPrep, setCallPrep] = useState(null);
+  const [callPrepErr, setCallPrepErr] = useState(null);
+  const [callPrepLoading, setCallPrepLoading] = useState(false);
+  const [aiNotice, setAiNotice] = useState(null);
 
   useEffect(() => {
     let cancel = false;
@@ -159,12 +166,40 @@ export function CompanyDetailPage() {
     }
   }
 
+  async function runCallPrep() {
+    setCallPrepLoading(true);
+    setCallPrepErr(null);
+    setCallPrep(null);
+    try {
+      const { data } = await api.post('/api/ai/call-prep', {
+        company_id: id,
+      });
+      setCallPrep(data);
+    } catch (e) {
+      setCallPrepErr(formatAiError(e));
+    } finally {
+      setCallPrepLoading(false);
+    }
+  }
+
+  async function reloadCompany() {
+    const { data: full } = await api.get(`/api/companies/${id}`);
+    setPayload(full);
+  }
+
   if (loading) return <p className="text-slate-400">Loading…</p>;
   if (err) return <p className="text-red-300">{err}</p>;
   if (!payload) return null;
 
   const { company, contacts, recent_outreach, open_deal_tasks, data_health } =
     payload;
+
+  const lastContactIso =
+    recent_outreach?.[0]?.activity_timestamp ??
+    company.last_outreach_date ??
+    company.last_interaction ??
+    null;
+  const outreachAttemptCount = company.outreach_attempt_count ?? 0;
 
   return (
     <div>
@@ -215,6 +250,100 @@ export function CompanyDetailPage() {
           )}
         </div>
       </div>
+
+      {aiNotice && (
+        <p className="mt-4 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-100 ring-1 ring-emerald-500/30">
+          {aiNotice}
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setAiNotice(null);
+            setDraftModalOpen(true);
+          }}
+          className="rounded-lg bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600"
+        >
+          Draft outreach email
+        </button>
+        <button
+          type="button"
+          disabled={callPrepLoading}
+          onClick={runCallPrep}
+          className="rounded-lg border border-white/15 bg-slate-800/80 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+        >
+          {callPrepLoading ? 'Generating…' : 'Prep for call'}
+        </button>
+      </div>
+
+      {(callPrep || callPrepErr) && (
+        <section className="mt-6 rounded-xl border border-white/10 bg-slate-900/50 p-5">
+          <h2 className="text-lg font-medium text-white">Call prep</h2>
+          {callPrepErr && (
+            <p className="mt-2 text-sm text-red-300">{callPrepErr}</p>
+          )}
+          {callPrep && !callPrepErr && (
+            <div className="mt-4 space-y-4 text-sm text-slate-300">
+              <div>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Situation summary
+                </h3>
+                <p className="mt-1 text-slate-200">{callPrep.situation_summary}</p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Talking points
+                </h3>
+                <ul className="mt-1 list-inside list-disc text-slate-200">
+                  {(callPrep.talking_points || []).map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Questions to ask
+                </h3>
+                <ul className="mt-1 list-inside list-disc text-slate-200">
+                  {(callPrep.questions_to_ask || []).map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Recent context
+                </h3>
+                <p className="mt-1 text-slate-200">{callPrep.recent_context}</p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase text-slate-500">
+                  Prior conversation context
+                </h3>
+                <p className="mt-1 text-slate-200">
+                  {callPrep.prior_conversation_context}
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      <DraftEmailModal
+        open={draftModalOpen}
+        onClose={() => setDraftModalOpen(false)}
+        companyId={company.id}
+        companyName={company.name}
+        lastContactIso={lastContactIso}
+        outreachAttemptCount={outreachAttemptCount}
+        initialIntent=""
+        onSaved={() => {
+          setAiNotice('Draft saved to outreach record.');
+          reloadCompany();
+        }}
+      />
 
       {flagOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
