@@ -42,6 +42,11 @@ export function AddCompanyModal({ open, onClose, onCreated }) {
         origination_status: form.origination_status,
         situation_type: form.situation_type,
       });
+      try {
+        await api.post(`/api/companies/${data.id}/recalculate-score`);
+      } catch {
+        /* score can be refreshed manually if this fails */
+      }
       setForm(empty);
       onCreated?.();
       navigate(`/companies/${data.id}`);

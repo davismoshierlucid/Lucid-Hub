@@ -3,6 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { HealthBadge, PriorityBadge } from '../components/HealthBadge.jsx';
 
+const PRIORITY_LABELS = {
+  capital_need_urgency: 'Capital Need Urgency',
+  market_opportunity: 'Market Opportunity',
+  business_momentum: 'Business Momentum',
+  trigger_events: 'Trigger Events',
+  strategic_inflection: 'Strategic Inflection',
+};
+
 function fieldLabel(k) {
   return k.replace(/_/g, ' ');
 }
@@ -17,6 +25,7 @@ export function CompanyDetailPage() {
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagReason, setFlagReason] = useState('');
   const [flagErr, setFlagErr] = useState(null);
+  const [priorityRecalcLoading, setPriorityRecalcLoading] = useState(false);
 
   useEffect(() => {
     let cancel = false;
@@ -137,6 +146,17 @@ export function CompanyDetailPage() {
     await api.delete(`/api/companies/${id}/flag`);
     const { data: full } = await api.get(`/api/companies/${id}`);
     setPayload(full);
+  }
+
+  async function recalculatePriority() {
+    setPriorityRecalcLoading(true);
+    try {
+      await api.post(`/api/companies/${id}/recalculate-score`);
+      const { data: full } = await api.get(`/api/companies/${id}`);
+      setPayload(full);
+    } finally {
+      setPriorityRecalcLoading(false);
+    }
   }
 
   if (loading) return <p className="text-slate-400">Loading…</p>;
@@ -354,6 +374,66 @@ export function CompanyDetailPage() {
           </div>
         </section>
       </div>
+
+      <section className="mt-10 rounded-xl border border-white/10 bg-slate-900/40 p-6">
+        <h2 className="text-lg font-medium text-white">Priority score</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Five category inputs (0–20 each), plus banker flag boost when applicable.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-2xl font-semibold text-white">
+              Overall: {company.priority_score ?? '—'} / 100
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Data mode:{' '}
+              {company.priority_score_breakdown?.data_mode === 'mock'
+                ? 'Mock (live in Phase 3)'
+                : company.priority_score_breakdown?.data_mode || '—'}
+            </p>
+            {company.priority_score_breakdown?.calculated_at && (
+              <p className="mt-1 text-xs text-slate-500">
+                Last calculated:{' '}
+                {new Date(
+                  company.priority_score_breakdown.calculated_at
+                ).toLocaleString()}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            disabled={priorityRecalcLoading}
+            onClick={recalculatePriority}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          >
+            {priorityRecalcLoading ? 'Recalculating…' : 'Recalculate'}
+          </button>
+        </div>
+        <ul className="mt-6 space-y-2 text-sm">
+          {[
+            'capital_need_urgency',
+            'market_opportunity',
+            'business_momentum',
+            'trigger_events',
+            'strategic_inflection',
+          ].map((key) => (
+            <li key={key} className="flex justify-between text-slate-300">
+              <span>{PRIORITY_LABELS[key]}:</span>
+              <span className="text-white">
+                {company.priority_score_breakdown?.[key] ?? '—'} / 20
+              </span>
+            </li>
+          ))}
+          <li className="flex justify-between border-t border-white/10 pt-2 text-slate-300">
+            <span>Banker flag boost:</span>
+            <span className="text-amber-200/90">
+              {company.banker_flag
+                ? `+${company.priority_score_breakdown?.banker_flag_boost ?? 15}`
+                : `+${company.priority_score_breakdown?.banker_flag_boost ?? 0}`}
+            </span>
+          </li>
+        </ul>
+      </section>
 
       <section className="mt-12">
         <div className="flex flex-wrap items-center justify-between gap-2">

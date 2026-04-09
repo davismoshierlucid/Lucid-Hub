@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { requireDatabase } from '../middleware/requireDatabase.js';
 import { attachDbUser } from '../middleware/attachDbUser.js';
 import { computeDataHealth } from '../services/dataHealth.js';
+import { computePriorityScoreForCompany } from '../services/priorityScore.js';
 import { getPagination, isUuid } from '../utils/pagination.js';
 
 const router = Router();
@@ -375,6 +376,7 @@ router.delete('/companies/:id/flag', async (req, res, next) => {
     const { score: data_health_score } = computeDataHealth(merged, {
       contactCount,
     });
+    const prio = computePriorityScoreForCompany(merged);
 
     const { rows } = await pool.query(
       `UPDATE companies SET
@@ -383,10 +385,17 @@ router.delete('/companies/:id/flag', async (req, res, next) => {
         banker_flag_set_by = NULL,
         banker_flag_set_at = NULL,
         data_health_score = $1,
+        priority_score = $2,
+        priority_score_breakdown = $3,
         updated_at = now()
-      WHERE id = $2
+      WHERE id = $4
       RETURNING *`,
-      [data_health_score, req.params.id]
+      [
+        data_health_score,
+        prio.priority_score,
+        prio.priority_score_breakdown,
+        req.params.id,
+      ]
     );
     res.json(rows[0]);
   } catch (err) {

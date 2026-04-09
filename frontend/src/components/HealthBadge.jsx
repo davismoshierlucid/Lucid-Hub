@@ -19,10 +19,12 @@ export function HealthBadge({ score }) {
 }
 
 export function PriorityBadge({ score }) {
-  const v = score ?? '—';
+  const { label, className } = tier(score);
   return (
-    <span className="inline-flex rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-500/40">
-      Priority {v}
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${className}`}
+    >
+      Priority {label}
     </span>
   );
 }

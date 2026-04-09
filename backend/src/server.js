@@ -4,6 +4,7 @@ import {
   isDatabaseConfigured,
   testDatabaseConnection,
 } from './config/db.js';
+import { startPriorityScoreCron } from './jobs/priorityScoreCron.js';
 
 const port = parseInt(process.env.PORT || '3001', 10);
 
@@ -26,6 +27,7 @@ async function start() {
 
   app.listen(port, () => {
     console.log(`[server] Lucid Hub API listening on http://localhost:${port}`);
+    startPriorityScoreCron();
   });
 }
 
